@@ -7,10 +7,23 @@
 #include <stdio.h>
 #include <string.h>
 #include <sys/inotify.h>
+#include <sys/stat.h>
 #include <unistd.h>
 static int inits, adds, closes, polls, reads, fail_add = -1, init_error, close_error, poll_error,
                                               read_error;
 static int add_error = EEXIST;
+static int stat_calls, stat_failure = -1, regular_fd = -1, follow_alias;
+static const int64_t *expected_fds;
+static int fake_stat(int fd, struct stat *info) {
+    ++stat_calls;
+    if (fd == stat_failure) {
+        errno = EBADF;
+        return -1;
+    }
+    memset(info, 0, sizeof *info);
+    info->st_mode = fd == regular_fd ? 0100000 : 0040000;
+    return 0;
+}
 static int poll_result = 1;
 static short poll_events = POLLIN;
 static int ids[256];
@@ -28,6 +41,12 @@ static int fake_init(int flags) {
 static int fake_add(int fd, const char *path, uint32_t mask) {
     assert(fd == 0 && path[0] == '/');
     assert(mask & IN_MASK_CREATE);
+    assert(!!(mask & IN_DONT_FOLLOW) == !follow_alias);
+    if (follow_alias) {
+        char expected[32];
+        snprintf(expected, sizeof expected, "/proc/self/fd/%lld", (long long)expected_fds[adds]);
+        assert(!strcmp(path, expected));
+    }
     int i = adds++;
     if (i == fail_add) {
         errno = add_error;
@@ -64,6 +83,7 @@ static ssize_t fake_read(int fd, void *out, size_t size) {
     memcpy(out, payload, payload_size);
     return (ssize_t)payload_size;
 }
+#define GW_FSTAT fake_stat
 #define GW_INIT fake_init
 #define GW_ADD fake_add
 #define GW_CLOSE fake_close
@@ -295,6 +315,76 @@ int main(void) {
     assert(gw_set_close(owner, mapping, info) == GW_OK);
     ids[0] = ids[1] = 9;
     assert(open_paths(paths, 2) == GW_SYSTEM && meta[0] == EEXIST && meta[7] == 1 && !state[0]);
+    // Borrowed fd validation never closes or changes caller descriptors.
+    int64_t directories[257];
+    for (int i = 0; i < 257; ++i)
+        directories[i] = i;
+    gw_const_ints fds = {directories, 3};
+    old_inits = inits;
+    assert(gw_set_open_fds(owner, mapping, (gw_const_ints){NULL, 1}, info) == GW_INPUT);
+    assert(gw_set_open_fds(owner, mapping, (gw_const_ints){directories, 0}, info) == GW_INPUT);
+    assert(gw_set_open_fds(owner, mapping, (gw_const_ints){directories, 257}, info) == GW_INPUT);
+    const int64_t invalid_fds[] = {INT64_MIN, -1, (int64_t)INT_MAX + 1, INT64_MAX};
+    for (size_t i = 0; i < sizeof invalid_fds / sizeof invalid_fds[0]; ++i) {
+        directories[1] = invalid_fds[i];
+        assert(gw_set_open_fds(owner, mapping, fds, info) == GW_INPUT && meta[7] == 1);
+    }
+    directories[1] = 0;
+    assert(gw_set_open_fds(owner, mapping, fds, info) == GW_INPUT && meta[7] == 1);
+    assert(inits == old_inits && stat_calls == 0);
+    directories[1] = 1;
+    stat_failure = 1;
+    assert(gw_set_open_fds(owner, mapping, fds, info) == GW_SYSTEM && meta[0] == EBADF &&
+           meta[7] == 1 && inits == old_inits);
+    stat_failure = -1;
+    regular_fd = 2;
+    assert(gw_set_open_fds(owner, mapping, fds, info) == GW_SYSTEM && meta[0] == ENOTDIR &&
+           meta[7] == 2 && inits == old_inits);
+    regular_fd = -1;
+    follow_alias = 1;
+    expected_fds = directories;
+    directories[1] = INT_MAX;
+    directories[2] = 41;
+    ids[0] = INT_MAX;
+    ids[1] = 0;
+    ids[2] = 41;
+    adds = 0;
+    assert(gw_set_open_fds(owner, mapping, fds, info) == GW_OK && meta[7] == -1);
+    memcpy(saved_state, state, sizeof state);
+    memcpy(saved_map, map, sizeof map);
+    int prior_stats = stat_calls;
+    assert(gw_set_open_fds(owner, mapping, (gw_const_ints){NULL, 0}, info) == GW_STATE);
+    assert(!memcmp(state, saved_state, sizeof state) && !memcmp(map, saved_map, sizeof map) &&
+           stat_calls == prior_stats);
+    payload_size = 0;
+    record(41, IN_CREATE, 0, "borrowed");
+    assert(next() == GW_OK && meta[6] == 2);
+    assert(gw_set_close(owner, mapping, info) == GW_OK);
+    for (int i = 0; i < 256; ++i) {
+        ids[i] = 256 - i;
+        directories[i] = i;
+    }
+    fds.len = 256;
+    for (int fail = 0; fail < 256; ++fail) {
+        stat_failure = fail;
+        old_inits = inits;
+        assert(gw_set_open_fds(owner, mapping, fds, info) == GW_SYSTEM && meta[0] == EBADF &&
+               meta[7] == fail && inits == old_inits);
+    }
+    stat_failure = -1;
+    for (int fail = 0; fail < 256; ++fail) {
+        fail_add = fail;
+        adds = 0;
+        old_closes = closes;
+        assert(gw_set_open_fds(owner, mapping, fds, info) == GW_SYSTEM && meta[0] == EEXIST &&
+               meta[7] == fail && !state[0] && closes == old_closes + 1);
+    }
+    fail_add = -1;
+    adds = 0;
+    assert(gw_set_open_fds(owner, mapping, fds, info) == GW_OK);
+    assert(gs_lookup(mapping, 256, ids[255]) == 255);
+    assert(gw_set_close(owner, mapping, info) == GW_OK);
+    assert(directories[0] == 0 && directories[255] == 255);
     puts(
         "set transaction, mapping, terminal compatibility, poison, fd-zero and fault tests passed");
 }

@@ -105,3 +105,6 @@ directory moves, disappears or unmounts. Honk integration remains future work.
 [Benchmarks](bench/README.md) preserve raw measurements and provenance; no
 comparative speed claim is made. [Contributing](CONTRIBUTING.md),
 [security](SECURITY.md), [license](LICENSE) and [notices](NOTICE).
+
+Callers with directory handles can use [borrowed descriptor sets](docs/DESCRIPTORS.md)
+to bind watches to those opened identities, including across pathname replacement.
