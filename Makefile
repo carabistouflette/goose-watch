@@ -43,3 +43,18 @@ test-sanitize:
 	mkdir -p .build
 	"$(GOOSE)" build tests/api.goose --standalone --debug --no-bce --cc ./scripts/sanitizer-cc.sh -o .build/api-sanitize
 	ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=halt_on_error=1 python3 tests/integration.py .build/api-sanitize
+
+.PHONY: test-examples bench
+check-examples:
+	"$(GOOSE)" check examples/events.goose
+	"$(GOOSE)" check examples/rerun.goose
+	"$(GOOSE)" check bench/driver.goose
+bench-smoke:
+	python3 bench/measure.py --goose "$(abspath $(GOOSE))" --cc "$(CC)" --rounds 1
+bench:
+	python3 bench/measure.py --goose "$(abspath $(GOOSE))" --cc "$(CC)"
+
+test-examples: check-examples
+	mkdir -p .build
+	"$(GOOSE)" build examples/rerun.goose --cc "$(CC)" -O2 -o .build/rerun
+	python3 tests/examples.py .build/rerun

@@ -1,4 +1,4 @@
-# Proposed API and contract
+# API and contract
 
 Experimental Linux directory watcher. Initial consumer: a standalone command
 rerunner example, composing watching and a separately pinned goose-process.
@@ -6,7 +6,8 @@ Honk integration is a future proposal, not an existing consumer claim.
 
 - `root struct Watcher`: compiler-enforced noncopyable owner, fixed 64 KiB pending
   kernel event buffer and private integer state; zero initialization is inactive.
-  No global registry, threads, heap allocation or hidden process/environment I/O.
+  No global registry, threads or native heap allocation. Event names use Goose
+  growable storage; all allocations are caller-owned. No hidden environment I/O.
 - `open(watcher&, absolute_path) -> Status`: one nonrecursive directory watch,
   nonblocking close-on-exec inotify descriptor. Reject already-open owners,
   empty/relative/overlong/NUL paths and final symlinks. Paths are at most 4095
@@ -36,8 +37,7 @@ close/reopen and rescan; no claim of a complete history. Rename halves are indep
 and may span reads or be missing. No automatic pairing, recursion, debounce,
 ignore rules, traversal, subprocesses, file opening or background work in core.
 
-After delivering Ignored, return End on subsequent calls once buffered records
-are consumed. Overflow may hide Ignored, so observable End is not guaranteed.
+After delivering Ignored, return End on subsequent calls once the current userspace buffer is consumed; no further kernel reads occur. Overflow may hide Ignored, so observable End is not guaranteed.
 End and CorruptEvent retain fd ownership: explicit close is still required.
 CorruptEvent permanently poisons event consumption until close/reopen. A moved watched directory remains watched by inode; paths can become stale.
 Do not use notifications as authorization to open files. Names are untrusted
@@ -60,3 +60,10 @@ benchmarks with provenance and no unsupported comparison or speed claims.
 `timeout_ms` bounds the requested poll wait, not total scheduling time or
 filesystem pathname resolution. Root owners are locals/globals, not elements
 of ordinary arrays. Name outputs reuse their existing capacity.
+
+`has(event, mask)` tests whether any supplied bit is present (zero matches none).
+The mask constants are the Linux values; unknown future bits are retained.
+Native entry points and fields prefixed with `_` or `detail_` are private API.
+
+Kernel behavior reference: [inotify(7)](https://man7.org/linux/man-pages/man7/inotify.7.html)
+and [inotify_add_watch(2)](https://man7.org/linux/man-pages/man2/inotify_add_watch.2.html).
