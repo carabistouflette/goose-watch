@@ -15,6 +15,8 @@ The C-only decoder loop uses one million synthetic records; it excludes kernel
 I/O and Goose name copying, and uses a separate translation unit without LTO to prevent caller folding.
 It is a diagnostic microbenchmark, not an end-to-end speed claim.
 
+The script snapshots source/Git/compiler state before building and rejects changes
+during measurement. It also checksums both measured binaries before and after.
 The report records source hashes, Git identity/dirty state, Goose revision and
 binary hash, compiler version, flags, platform, affinity and queue limit. Retain
 all samples, including slower ones. A dirty run is exploratory; publication needs

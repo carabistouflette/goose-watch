@@ -68,10 +68,13 @@ int main(int argc, char **argv) {
     action.sa_handler = caught;
     assert(sigemptyset(&action.sa_mask) == 0);
     assert(sigaction(SIGALRM, &action, NULL) == 0);
-    struct itimerval timer = {.it_value = {.tv_sec = 0, .tv_usec = 10000}};
+    struct itimerval timer = {.it_interval = {.tv_sec = 0, .tv_usec = 10000},
+                              .it_value = {.tv_sec = 0, .tv_usec = 10000}};
     assert(setitimer(ITIMER_REAL, &timer, NULL) == 0);
-    assert(gw_next(owner, (gw_bytes){buffer, sizeof buffer}, 60000, (gw_bytes){name, sizeof name},
+    assert(gw_next(owner, (gw_bytes){buffer, sizeof buffer}, 1000, (gw_bytes){name, sizeof name},
                    info) == GW_INTERRUPTED);
+    struct itimerval stopped = {0};
+    assert(setitimer(ITIMER_REAL, &stopped, NULL) == 0);
     assert(meta[0] == EINTR && !meta[2]);
     assert(gw_close(owner, info) == GW_OK && descriptors() == before);
     assert(rmdir(path) == 0);

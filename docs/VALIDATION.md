@@ -25,11 +25,11 @@ and concurrent changes to inotify sysctls are outside this qualification.
 Native fault tests inject errors deterministically, including initial open,
 failed add plus failed cleanup, fd zero, poll errors/interruption, read
 EAGAIN/interruption/error/EOF, malformed events, overflow, poison and
-close-EINTR. No test changes the host's sysctls. Overflow recovery is synthetic;
+close-EINTR. No test changes the host's sysctls. Overflow delivery is synthetic; the example recovery branch is source-reviewed,
 a real kernel-overflow stress campaign is not claimed. Real-native tests check
 repeat success/failure fd counts, independent owners, nonblocking/CLOEXEC flags,
 exec inheritance and a delivered interrupt signal. Native GCC/Clang and complete
-Goose consumers run under ASan/UBSan. Five compilation failures enforce resource
+Goose consumers run under ASan/UBSan. Six compilation failures enforce resource
 ownership. Fuzzing targets the decoder and path validator with bounded input
 size and fixed seed; it is finite, not proof of absence of defects.
 

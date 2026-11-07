@@ -19,10 +19,11 @@ for name, body, message in [
 
 for name, source in [
     ('embedded', 'struct Box { owner: watch::Watcher } fn main() { var box: Box; }'),
+    ('event-view', 'fn main() { var owner = watch::Watcher { .. }; var event = watch::Event { .. }; let view = event.name[..]; let status = watch::next(owner,0,event); print(view,status.ready); }'),
     ('by-value', 'fn take(owner: watch::Watcher) {} fn main() { var owner = watch::Watcher { .. }; take(owner); }'),
 ]:
     path = ROOT / '.build' / f'reject-{name}.goose'
-    path.write_text('import watch from "..";\n' + source + '\n')
+    path.write_text('import watch from ".."; import std;\n' + source + '\n')
     result = subprocess.run([sys.argv[1], 'check', str(path)], capture_output=True, text=True, timeout=30)
-    assert result.returncode != 0 and 'root' in result.stderr, result.stderr
-print('five resource ownership rejections passed')
+    assert result.returncode != 0 and ('shrinks' if name == 'event-view' else 'root') in result.stderr, result.stderr
+print('six resource ownership rejections passed')
