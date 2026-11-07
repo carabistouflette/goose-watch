@@ -37,3 +37,10 @@ queued burst. Generation is outside the drain timer; open includes packing,
 validation, watch registration and map sorting. All returned origin indices are
 checked, and global overflow rejects the sample. Set reports retain the same
 before/after source, compiler and binary identity checks as single-owner reports.
+
+`make bench-fds` (or `bench-fds-smoke`) uses the same set workload with inherited
+borrowed directory descriptors. Open timing includes fstat, controlled procfd
+alias formatting, kernel registration and map sorting; descriptor acquisition
+and number parsing happen before the timer. Reports identify registration mode,
+retain every sample and preserve source/compiler/binary stability checks. Caller
+fds close before temporary directory cleanup. No comparative speed claim follows.

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: Apache-2.0
 """Measure public set open/idle/burst ownership at fixed directory counts."""
+from contextlib import ExitStack
 import argparse
 import hashlib
 import json
@@ -14,6 +15,7 @@ ROOT = Path(__file__).resolve().parent.parent
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--goose', required=True)
 parser.add_argument('--cc', default='gcc')
+parser.add_argument('--descriptors', action='store_true', help='borrow open directory fds; acquisition is outside the timer')
 parser.add_argument('--rounds', type=int, default=5)
 parser.add_argument('--output', type=Path, default=ROOT / '.build/set-benchmark.json')
 args = parser.parse_args()
@@ -22,9 +24,9 @@ args.goose = str(Path(args.goose).resolve())
 (ROOT / '.build').mkdir(exist_ok=True)
 
 
-def run(*command):
+def run(*command, pass_fds=()):
     return subprocess.run(command, cwd=ROOT, capture_output=True, text=True,
-                          check=True, timeout=90).stdout.strip()
+                          check=True, timeout=90, pass_fds=pass_fds).stdout.strip()
 
 
 def sha(path):
@@ -56,12 +58,18 @@ binary = sha(ROOT / '.build/set-bench')
 samples = []
 for iteration in range(args.rounds):
     for count in (1, 16, 64, 256):
-        with tempfile.TemporaryDirectory(prefix='watch-set-bench-') as temp:
+        with tempfile.TemporaryDirectory(prefix='watch-set-bench-') as temp, ExitStack() as borrowed:
             root = Path(temp)
             for i in range(count):
                 (root / f'd{i}').mkdir()
+            fds = []
+            if args.descriptors:
+                for i in range(count):
+                    fd = os.open(root / f'd{i}', os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_CLOEXEC)
+                    borrowed.callback(os.close, fd)
+                    fds.append(fd)
             opened, idle, drain, events, names = map(int, run(
-                str(ROOT / '.build/set-bench'), temp, str(count)).split())
+                str(ROOT / '.build/set-bench'), temp, str(count), *map(str, fds), pass_fds=fds).split())
         samples.append(dict(
             round=iteration, directories=count, files_per_directory=16,
             open_ns=opened, idle_ns=idle, idle_calls=1000, drain_ns=drain,
@@ -74,10 +82,10 @@ report = dict(
     goose_revision=(ROOT / 'GOOSE_REVISION').read_text().strip(),
     goose_binary_sha256=before['goose'], compiler=before['cc'], binary_sha256=binary,
     platform=platform.platform(), affinity=before['affinity'], queue_limit=before['queue_limit'],
-    flags='-O2', stable_inputs=True, samples=samples,
+    flags='-O2', registration=('borrowed-descriptors' if args.descriptors else 'paths'), stable_inputs=True, samples=samples,
     limits='Shared-host local samples; no comparative ranking or latency-percentile guarantee. '
            'Drain excludes generation and includes lookup, refill, decoding and Goose name copying. '
-           'Idle includes poll. Open includes input packing, validation, syscalls and sorting.',
+           'Idle includes poll. Path open includes packing, validation, syscalls and sorting; fd open includes fstat, private alias formatting, registration and sorting. Descriptor acquisition is outside the timer.',
 )
 args.output.parent.mkdir(parents=True, exist_ok=True)
 args.output.write_text(json.dumps(report, indent=2) + '\n')

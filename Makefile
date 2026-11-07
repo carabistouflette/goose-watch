@@ -61,7 +61,7 @@ check-examples:
 	"$(GOOSE)" check examples/sets.goose
 	"$(GOOSE)" check examples/rerun.goose
 	"$(GOOSE)" check bench/driver.goose
-bench-smoke: bench-set-smoke
+bench-smoke: bench-set-smoke bench-fds-smoke
 	python3 bench/measure.py --goose "$(abspath $(GOOSE))" --cc "$(CC)" --rounds 1
 bench:
 	python3 bench/measure.py --goose "$(abspath $(GOOSE))" --cc "$(CC)"
@@ -106,3 +106,9 @@ test-fds-sanitize:
 	mkdir -p .build
 	"$(GOOSE)" build tests/fds_api.goose --standalone --debug --no-bce --cc ./scripts/sanitizer-cc.sh -o .build/fds-sanitize
 	ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=halt_on_error=1 python3 tests/fds_integration.py .build/fds-sanitize
+
+.PHONY: bench-fds bench-fds-smoke
+bench-fds:
+	python3 bench/set_measure.py --goose "$(abspath $(GOOSE))" --cc "$(CC)" --descriptors --output .build/fds-benchmark.json
+bench-fds-smoke:
+	python3 bench/set_measure.py --goose "$(abspath $(GOOSE))" --cc "$(CC)" --descriptors --rounds 1 --output .build/fds-benchmark.json
