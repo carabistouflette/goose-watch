@@ -3,6 +3,7 @@ import watch from "..";
 import os;
 import std;
 fn emit(event: const watch::Event&) {
+    assert(watch::has(event, event.mask));
     var line: u8[>..] = [];
     format(line, event.mask, " ", event.cookie, " ");
     let hex = "0123456789abcdef";
@@ -36,13 +37,21 @@ fn main() {
             assert(watch::next(owner, 0, event).error == watch::Error.InvalidState);
             print("CLOSED"); return;
         }
-        if command == "reopen" {
+        if command == "poison" {
+            owner._state[5] = 1; // White-box terminal-state regression.
+            event.mask = 99; event.cookie = 99; event.name.append("stale");
+            assert(watch::next(owner, 0, event).error == watch::Error.CorruptEvent);
+            assert(event.mask == 0 && event.cookie == 0 && event.name.len == 0);
+            assert(watch::next(owner, 0, event).error == watch::Error.CorruptEvent);
+            print("POISONED");
+        } else if command == "reopen" {
             assert(watch::close(owner).error == watch::Error.None);
             assert(watch::open(owner, argv[1]).error == watch::Error.None);
             print("REOPENED");
         } else {
+            event.mask = 99; event.cookie = 99; event.name.clear(); event.name.append("stale");
             let status = watch::next(owner, if command == "wait" { 20 } else { 0 }, event);
-            if status.error == watch::Error.End { print("END"); }
+            if status.error == watch::Error.End { assert(event.mask == 0 && event.cookie == 0 && event.name.len == 0); print("END"); }
             else {
                 assert(status.error == watch::Error.None);
                 if status.ready { emit(event); }
