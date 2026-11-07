@@ -15,17 +15,19 @@ fn main() {
     for _ in 1000 { let status = watch::next(owner, 0, out); assert(status.error == watch::Error.None && !status.ready); }
     let idle_ns = clock_ns() - idle_start;
     for path in paths { for i in 16 { assert(write_file(str(path, "/file", i, ".goose"), "x")); } }
-    var events: i64 = 0; var creates: i64 = 0; var name_bytes: i64 = 0;
+    var per_directory: i64[256] = [0; 256];
+    var events:        i64      = 0; var creates: i64 = 0; var name_bytes: i64 = 0;
     let drain_start = clock_ns();
     loop {
         let status = watch::next(owner, 0, out); assert(status.error == watch::Error.None);
         if !status.ready { break; }
         assert(!watch::has(out.event, watch::OVERFLOW)); assert(out.directory >= 0 && out.directory < count);
         events++; name_bytes += out.event.name.len;
-        if watch::has(out.event, watch::CREATE) { creates++; }
+        if watch::has(out.event, watch::CREATE) { creates++; per_directory[out.directory]++; }
     }
     let drain_ns = clock_ns() - drain_start;
     assert(creates == count * 16 && events >= creates);
+    for i in count { assert(per_directory[i] == 16); }
     assert(watch::close(owner).error == watch::Error.None);
     print(open_ns, " ", idle_ns, " ", drain_ns, " ", events, " ", name_bytes);
 }

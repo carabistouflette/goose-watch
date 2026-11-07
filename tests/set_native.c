@@ -253,7 +253,19 @@ int main(void) {
     assert(next() == GW_OK && !meta[2]);
     read_error = EINTR;
     assert(next() == GW_INTERRUPTED);
+    read_error = EIO;
+    assert(next() == GW_SYSTEM && meta[0] == EIO && !meta[2] && meta[6] == -1);
     read_error = 0;
+    const short failed_polls[] = {POLLERR, POLLHUP};
+    for (size_t i = 0; i < 2; ++i) {
+        poll_events = failed_polls[i];
+        old_reads = reads;
+        assert(next() == GW_SYSTEM && meta[0] == EIO && reads == old_reads);
+    }
+    poll_events = POLLIN;
+    payload_size = 0;
+    assert(next() == GW_CORRUPT && state[5] && !meta[2] && meta[6] == -1);
+    assert(gw_set_close(owner, mapping, info) == GW_OK && open_paths(paths, 1) == GW_OK);
     poll_events = POLLNVAL;
     assert(next() == GW_SYSTEM && meta[0] == EBADF);
     poll_events = POLLIN;

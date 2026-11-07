@@ -97,6 +97,19 @@ int main(int argc, char **argv) {
     }
     assert(descriptors() == before);
     assert(gw_set_open(owner, map_view, packed_view, (gw_ints){offsets, 4}, set_info) == GW_OK);
+    int64_t second_map[512] = {0};
+    assert(gw_set_open(second, (gw_ints){second_map, 512}, packed_view, (gw_ints){offsets, 4},
+                       set_info) == GW_OK);
+    assert(second_state[0] != state[0]);
+    assert(gw_set_close(second, (gw_ints){second_map, 512}, set_info) == GW_OK);
+    char probe[4096];
+    assert(snprintf(probe, sizeof probe, "%s/probe", first) < (int)sizeof probe);
+    int probe_fd = open(probe, O_CREAT | O_WRONLY | O_CLOEXEC, 0600);
+    assert(probe_fd >= 0 && close(probe_fd) == 0);
+    assert(gw_set_next(owner, map_view, (gw_bytes){buffer, sizeof buffer}, 1000,
+                       (gw_bytes){name, sizeof name}, set_info) == GW_OK);
+    assert(set_meta[2] && set_meta[6] == 0 && (set_meta[3] & IN_CREATE));
+    assert(unlink(probe) == 0);
     int set_fd = (int)(state[0] - 1);
     assert(fcntl(set_fd, F_GETFL) & O_NONBLOCK);
     assert(fcntl(set_fd, F_GETFD) & FD_CLOEXEC);

@@ -88,7 +88,9 @@ with tempfile.TemporaryDirectory(prefix='watch-set-') as temp:
     for i in range(256):d=root/f'd{i:03}';d.mkdir();many.append(d)
     driver=Driver(many)
     try:
-        many[-1].joinpath('last.goose').touch();rows,_=driver.drain()
-        assert any(i==255 and m&256 and n==b'last.goose' for i,m,_,n in rows)
+        many[-1].joinpath('last.goose').touch()
+        index,mask,_,name=driver.call().split(' ',3)
+        assert int(index)==255 and int(mask)&256 and bytes.fromhex(name)==b'last.goose'
+        # close now checks that this nonempty returned name survives owner close.
     finally:driver.close()
 print('set origin, aliases, rename, byte names, terminal, reordering and max-count tests passed')
