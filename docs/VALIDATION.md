@@ -36,3 +36,25 @@ size and fixed seed; it is finite, not proof of absence of defects.
 CI is configured for Linux GCC/Clang and full-commit pinned actions. Hosted CI
 has not run for this unpublished checkout. Local evidence is not hosted release
 acceptance. macOS, Windows, ARM64 and alternate libc are unqualified.
+
+## Local qualification receipt
+
+Runtime implementation was independently reviewed at `e6272a7`; final test and
+benchmark-tool fixes are in `8d3cda6`. The runtime sources are unchanged between
+those commits. Three independent reviewers found no blocking runtime issue.
+Repeated design, implementation and test reviews preceded the final candidate.
+
+On Linux x86-64/glibc with compiler commit
+`eadca409f68210893f366e60d0c2f0dc29a339be`, local qualification passed:
+
+- Goose JIT, optimized GCC/Clang, and debug/bounds-check builds.
+- Six compiler ownership/lifetime rejection cases.
+- Filesystem, lifecycle, byte-name, buffering, timeout and command example tests.
+- Native GCC/Clang ASan/UBSan and complete Goose consumer ASan/UBSan runs.
+- Fixed-seed decoder/path libFuzzer campaign: 50,000 inputs, ASan/UBSan enabled.
+- Fresh standalone local clone: check, JIT/optimized/debug tests and command example pass.
+- Clean-source GCC/Clang benchmark runs, five rounds each, all samples retained
+  under `bench/results/`. Binary/source stability is checked during measurement.
+
+This receipt covers local checks only. It does not establish hosted CI,
+a public release, a security audit, or qualification on other platforms.
