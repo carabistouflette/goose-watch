@@ -1,0 +1,31 @@
+{
+  "source_commit": "3a6cee3e1aa17f972fb16624aad7b64dd21a5a41",
+  "platform": "Linux x86-64/glibc",
+  "goose_revision": "eadca409f68210893f366e60d0c2f0dc29a339be",
+  "reviews": [
+    "Independent API/native/security/performance review: no blocking finding",
+    "Independent tests/benchmark review: per-directory count fixed, targeted faults added"
+  ],
+  "checks": [
+    "Full GCC JIT/O2/debug/native/Goose-ASan+UBSan and 50000-input fuzz qualification",
+    "Clang check, JIT/O2/debug, native/Goose-ASan+UBSan and command example qualification",
+    "Targeted GCC/Clang native fault regression checks",
+    "Clean standalone clone: check, JIT/O2/debug Set integration",
+    "Clean-source GCC/Clang five-round benchmarks: 20 samples each"
+  ],
+  "limits": [
+    "Local checks only; hosted CI required before release",
+    "Linux x86-64/glibc only; no real kernel overflow campaign",
+    "Finite fuzzing; no comparative performance claim"
+  ],
+  "logs": {
+    "qualification-gcc.log": "63903981c9b044d6f0480aea587711a404fb652028cefbaa805425fcc17b17c9",
+    "qualification-clang.log": "18e982ed475d830a05f442e578e5522147d2d7a75841a7e7bb64d6a9b36f315a",
+    "set-final-validation.log": "2eb427cd00a1e773226ac836d3feb1b959036353a5e3ff09913b54236b80b4fc",
+    "review-fixes.log": "3eadb2637e8bf408065b65da24bd21b8a2e94200bb2228eb787d2fca9bc392bf",
+    "review-gcc.log": "183b28ab88fddc335469a2a411c040c523dfcd0cb9782765f4b526be983b4567",
+    "set-close-name.log": "ddd1c71cb7ef2f94ef59d25531b884a8b0563108365b9ff6032eb796be783e5b",
+    "standalone-set.log": "2405b0fcba37b777fd24ccb6266a55389a3604723614820e20a07e61d9166399"
+  },
+  "resolved_validation_failure": "An added unsupported-header test initially omitted the remaining syscall macros. The test harness was corrected; GCC/Clang sanitizer runs pass."
+}

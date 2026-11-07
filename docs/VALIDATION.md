@@ -55,6 +55,13 @@ Measurements require a queue limit of at least 16,384; shared-host samples do no
 establish comparative performance. Source, compiler and binary hashes are
 checked before and after measurement.
 
+The local Set qualification at `3a6cee3` passed GCC/Clang builds, the native
+and complete Goose sanitizer suites, 50,000 mixed fuzz inputs, independent source
+and test reviews, and a fresh standalone clone check. Exact scope and limits are
+recorded in [the receipt](watch-set-validation.json). Clean five-round records
+for both C compilers are under [bench/results/watch-set](../bench/results/watch-set/).
+Hosted CI remains a release gate.
+
 ## Alpha.1 local qualification receipt
 
 Runtime implementation was independently reviewed at `e6272a7`; final test and
