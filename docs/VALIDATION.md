@@ -95,3 +95,7 @@ masks and unsupported headers without fstat/acquisition. Real-native tests cover
 caller-close-after-registration, alias rollback/leaks, watch CLOEXEC/NONBLOCK and
 exec inheritance. The held-directory deletion probe records a kernel outcome;
 no particular deletion-notification sequence is required.
+
+The [descriptor receipt](descriptors-validation.json) records the exact feature
+and benchmark source identities and local checks. [Raw descriptor records](../bench/results/descriptors/)
+retain every sample. Hosted CI remains required before publication.

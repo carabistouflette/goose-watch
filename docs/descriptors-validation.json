@@ -1,0 +1,28 @@
+{
+  "schema": 1,
+  "feature_source": "23381ee41e79ecd19349214cae29eb084fafa02d",
+  "benchmark_source": "7e63b0d0d798569342e3ef61bf0b5e6bc50f738a",
+  "compiler_revision": "eadca409f68210893f366e60d0c2f0dc29a339be",
+  "checks": {
+    "gcc": "Full format/check,JIT/O2/debug,examples,native and complete Goose ASan/UBSan,50000 fuzz inputs and benchmark smoke passed",
+    "clang": "Fresh standalone clone check,JIT/O2/debug,examples,native and complete Goose ASan/UBSan passed",
+    "ownership": "Existing12 compiler ownership/lifetime rejection cases pass;borrowedfd runtime checks cover caller ownership",
+    "benchmarks": "Clean five-round GCC/Clang descriptor runs,20samples each"
+  },
+  "reviews": "Independent security/implementation and test-quality reviews found no blocker;contract clarifications and standalone target setup fixed",
+  "log_sha256": {
+    "fds-qualification-gcc.log": "20c824b44436011883d2c4bb6ccf92d59303a704c25cb232cf4f5e2a2847c2f1",
+    "fds-qualification-clang.log": "38793ebcec7afea8e259e440818604d7cc14dba399be3f5f6d946877f8e54be5",
+    "fds-bench-check.log": "f3b56c52a007006287c211909768f458b938cb8464f0004b5d0b7e353eb68b12"
+  },
+  "compiler_recovery": "Original temporary compiler path disappeared after full qualification. Clean matching pinned revision found in goose-time-public checkout;its source is clean. Benchmark smoke/measurement used that installation. No shared symlink changed.",
+  "compiler_used_for_benchmarks": "/home/arobin/Work/Projects/goose-libs/.build/goose-time-public/.toolchain/goose/build/goose",
+  "limits": [
+    "Local checks only;hosted CI required before release",
+    "Linux x86-64/glibc only;requires genuine accessible /proc/self/fd",
+    "Caller fds remain unchanged during registration;API does not provide confinement",
+    "Held-directory deletion probe records outcome without requiring notification sequence",
+    "No recursive watching implemented by this primitive",
+    "Finite fuzz campaign;no comparative performance claim"
+  ]
+}
