@@ -3,13 +3,17 @@ import watch from "..";
 import std;
 import os;
 fn main() {
-    let argv = args(); assert(argv.len == 3);
+    let argv = args(); assert(argv.len >= 3);
     let count, valid = parse_int(argv[2]); assert(valid && count >= 1 && count <= 256);
     var words: u8[][>..] = [];
     for i in count { words.push(str(argv[1], "/d", i)); }
     var paths: (const u8[:])[>..] = []; for word in words { paths.push(word); }
+    let descriptors = argv.len > 3;
+    assert(argv.len == 3 || argv.len == count + 3);
+    var borrowed: i64[256] = [0; 256];
+    if descriptors { for i in count { let fd, valid_fd = parse_int(argv[i + 3]); assert(valid_fd && fd >= 0); borrowed[i] = fd; } }
     var owner = watch::WatchSet { .. }; var out = watch::SetEvent { .. };
-    let begin = clock_ns(); let opened = watch::open_set(owner, paths[..]); let open_ns = clock_ns() - begin;
+    let begin = clock_ns(); let opened = if descriptors { watch::open_set_fds(owner, borrowed[..count]) } else { watch::open_set(owner, paths[..]) }; let open_ns = clock_ns() - begin;
     assert(opened.status.error == watch::Error.None);
     let idle_start = clock_ns();
     for _ in 1000 { let status = watch::next(owner, 0, out); assert(status.error == watch::Error.None && !status.ready); }

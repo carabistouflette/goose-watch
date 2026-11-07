@@ -16,6 +16,7 @@ static int counted_add(int fd, const char *path, uint32_t mask) {
 #define GW_READ read
 #define GW_POLL poll
 #define GW_CLOSE close
+#define GW_FSTAT MUST_NOT_CALL_FSTAT_WITHOUT_MASK_SUPPORT
 #define GW_SET_NO_MASK_CREATE
 #include "../native/set.c"
 #include "../native/watch.c"
@@ -26,6 +27,10 @@ int main(void) {
                                 (gw_const_bytes){(const uint8_t *)"/tmp\0", 5},
                                 (gw_ints){offsets, 2}, (gw_ints){meta, 8});
     assert(code == GW_SYSTEM && meta[0] == ENOTSUP && !state[0] && calls == 0);
+    int64_t borrowed = 0;
+    assert(gw_set_open_fds((gw_ints){state, 8}, (gw_ints){map, 512}, (gw_const_ints){&borrowed, 1},
+                           (gw_ints){meta, 8}) == GW_SYSTEM);
+    assert(meta[0] == ENOTSUP && !state[0] && calls == 0);
     assert(gw_open((gw_ints){state, 8}, (gw_const_bytes){(const uint8_t *)"/tmp", 4},
                    (gw_ints){meta, 6}) == GW_OK);
     assert(calls == 2);

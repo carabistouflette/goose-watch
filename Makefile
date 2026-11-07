@@ -12,14 +12,15 @@ check:
 	"$(GOOSE)" format --check watch.goose tests examples bench
 	"$(GOOSE)" check tests/api.goose
 	"$(GOOSE)" check tests/set_api.goose
+	"$(GOOSE)" check tests/fds_api.goose
 	"$(GOOSE)" check bench/set_driver.goose
 	python3 tests/ownership.py "$(abspath $(GOOSE))"
-test: test-set
+test: test-set test-fds
 	mkdir -p .build
 	python3 tests/integration.py "$(abspath $(GOOSE))" run tests/api.goose --
 	"$(GOOSE)" build tests/api.goose --cc "$(CC)" -O2 -o .build/api
 	python3 tests/integration.py .build/api
-test-debug: test-set-debug
+test-debug: test-set-debug test-fds-debug
 	mkdir -p .build
 	"$(GOOSE)" build tests/api.goose --cc "$(CC)" --debug --no-bce -o .build/api-debug
 	python3 tests/integration.py .build/api-debug
@@ -38,6 +39,9 @@ test-native:
 	$(CC) -std=c11 -Wall -Wextra -Werror -O1 -g -fsanitize=address,undefined tests/set_unsupported.c -o .build/set-unsupported-$(CC)
 	ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=halt_on_error=1 .build/set-unsupported-$(CC)
 
+	$(CC) -std=c11 -Wall -Wextra -Werror -O1 -g -fno-omit-frame-pointer -fsanitize=address,undefined tests/fds_real.c -o .build/fds-real-$(CC)
+	ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=halt_on_error=1 .build/fds-real-$(CC)
+
 FUZZ_RUNS ?= 50000
 fuzz:
 	mkdir -p .build
@@ -46,7 +50,7 @@ fuzz:
 	UBSAN_OPTIONS=halt_on_error=1 .build/fuzz .build/fuzz-corpus -seed=219 -max_len=8192 -runs=$(FUZZ_RUNS) -timeout=2
 
 .PHONY: test-sanitize
-test-sanitize: test-set-sanitize
+test-sanitize: test-set-sanitize test-fds-sanitize
 	mkdir -p .build
 	"$(GOOSE)" build tests/api.goose --standalone --debug --no-bce --cc ./scripts/sanitizer-cc.sh -o .build/api-sanitize
 	ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=halt_on_error=1 python3 tests/integration.py .build/api-sanitize
@@ -57,7 +61,7 @@ check-examples:
 	"$(GOOSE)" check examples/sets.goose
 	"$(GOOSE)" check examples/rerun.goose
 	"$(GOOSE)" check bench/driver.goose
-bench-smoke: bench-set-smoke
+bench-smoke: bench-set-smoke bench-fds-smoke
 	python3 bench/measure.py --goose "$(abspath $(GOOSE))" --cc "$(CC)" --rounds 1
 bench:
 	python3 bench/measure.py --goose "$(abspath $(GOOSE))" --cc "$(CC)"
@@ -87,3 +91,24 @@ bench-set:
 	python3 bench/set_measure.py --goose "$(abspath $(GOOSE))" --cc "$(CC)"
 bench-set-smoke:
 	python3 bench/set_measure.py --goose "$(abspath $(GOOSE))" --cc "$(CC)" --rounds 1
+
+.PHONY: test-fds test-fds-debug test-fds-sanitize
+test-fds:
+	mkdir -p .build
+	python3 tests/fds_integration.py "$(abspath $(GOOSE))" run tests/fds_api.goose --
+	"$(GOOSE)" build tests/fds_api.goose --cc "$(CC)" -O2 -o .build/fds-api
+	python3 tests/fds_integration.py .build/fds-api
+test-fds-debug:
+	mkdir -p .build
+	"$(GOOSE)" build tests/fds_api.goose --cc "$(CC)" --debug --no-bce -o .build/fds-debug
+	python3 tests/fds_integration.py .build/fds-debug
+test-fds-sanitize:
+	mkdir -p .build
+	"$(GOOSE)" build tests/fds_api.goose --standalone --debug --no-bce --cc ./scripts/sanitizer-cc.sh -o .build/fds-sanitize
+	ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=halt_on_error=1 python3 tests/fds_integration.py .build/fds-sanitize
+
+.PHONY: bench-fds bench-fds-smoke
+bench-fds:
+	python3 bench/set_measure.py --goose "$(abspath $(GOOSE))" --cc "$(CC)" --descriptors --output .build/fds-benchmark.json
+bench-fds-smoke:
+	python3 bench/set_measure.py --goose "$(abspath $(GOOSE))" --cc "$(CC)" --descriptors --rounds 1 --output .build/fds-benchmark.json

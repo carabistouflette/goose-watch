@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- Add borrowed-directory `open_set_fds`, preserving existing Watcher/path interfaces.
+- Share transactional registration and retain caller-owned descriptors/flags.
+- Qualify fd identity across pathname replacement, fd0, aliases, full failure positions
+  and real descriptor lifetime/leak/exec behavior.
+
 ## 0.1.0-alpha.2
 
 - Add immutable WatchSet ownership for 1..256 explicit directories with stable

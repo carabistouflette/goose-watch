@@ -83,3 +83,19 @@ On Linux x86-64/glibc with compiler commit
 
 This receipt covers local checks only. It does not establish hosted CI,
 a public release, a security audit, or qualification on other platforms.
+
+## Borrowed descriptor qualification scope
+
+The fd consumer runs through JIT, optimized/debug and complete Goose sanitizer
+builds. Real inherited descriptors distinguish original identities after pathname
+replacement, verify origin indices, numeric/inode aliases, non-directories,
+invalid/live requests and caller ownership after close. Native fixtures cover
+all256 fstat/registration failure positions, formatting boundaries, fd0, preserved
+masks and unsupported headers without fstat/acquisition. Real-native tests cover
+caller-close-after-registration, alias rollback/leaks, watch CLOEXEC/NONBLOCK and
+exec inheritance. The held-directory deletion probe records a kernel outcome;
+no particular deletion-notification sequence is required.
+
+The [descriptor receipt](descriptors-validation.json) records the exact feature
+and benchmark source identities and local checks. [Raw descriptor records](../bench/results/descriptors/)
+retain every sample. Hosted CI remains required before publication.

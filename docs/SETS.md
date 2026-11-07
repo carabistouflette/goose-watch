@@ -90,3 +90,7 @@ EINVAL and rollback. No silent flag downgrade is performed.
 The kernel floor follows the actual
 [Linux 4.19 header](https://github.com/torvalds/linux/blob/v4.19/include/uapi/linux/inotify.h):
 4.18's header lacks IN_MASK_CREATE, despite the manual's earlier version note.
+
+An additive [borrowed descriptor interface](DESCRIPTORS.md) binds registration
+to already-open directory identities. It has explicit caller-lifetime and procfs
+requirements; path-based registration remains unchanged.
