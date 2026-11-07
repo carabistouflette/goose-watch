@@ -2,7 +2,8 @@
 
 Experimental Linux directory watcher. Initial consumer: a standalone command
 rerunner example, composing watching and a separately pinned goose-process.
-Honk integration is a future proposal, not an existing consumer claim.
+Honk separately consumes the pinned alpha.1 single-directory interface;
+[WatchSet](SETS.md) is the additive alpha.2 interface with a stricter terminal policy.
 
 - `root struct Watcher`: compiler-enforced noncopyable owner, fixed 64 KiB pending
   kernel event buffer and private integer state; zero initialization is inactive.

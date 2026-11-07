@@ -23,7 +23,7 @@ args = parser.parse_args()
 assert 1 <= args.rounds <= 30
 args.goose = str(Path(args.goose).resolve())
 (ROOT / '.build').mkdir(exist_ok=True)
-paths = ['native/watch.c', 'watch.goose', 'watch.build', 'GOOSE_REVISION', 'bench/driver.goose',
+paths = ['native/set.c', 'native/common.h', 'native/watch.c', 'watch.goose', 'watch.build', 'GOOSE_REVISION', 'bench/driver.goose',
          'bench/decoder.c', 'bench/decode_entry.c', 'bench/measure.py', 'scripts/native-manifest.py']
 
 def sha256(path):

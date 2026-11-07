@@ -10,4 +10,4 @@ for name, wd, mask, length, tail in [
     ('long', 7, 128, 256, b'x' * 255 + b'\0'),
     ('bad-length', 7, 256, 0xffffffff, b''),
 ]:
-    (out / name).write_bytes(struct.pack('=iIII', wd, mask, 0xffffffff, length) + tail)
+    (out / name).write_bytes(struct.pack('=iIII', wd, mask, 0 if name in ('overflow', 'ignored') else 0xffffffff, length) + tail)

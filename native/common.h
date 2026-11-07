@@ -65,8 +65,8 @@ static inline int gw_path(gw_const_bytes path) {
     return 1;
 }
 /* Byte-buffer offsets need not be aligned. Validate before exposing output. */
-static inline int gw_decode(const uint8_t *data, size_t size, int64_t wd, gw_bytes name, gw_ints meta,
-                     size_t *consumed) {
+static inline int gw_decode(const uint8_t *data, size_t size, int64_t wd, gw_bytes name,
+                            gw_ints meta, size_t *consumed) {
     struct inotify_event event;
     if (size < sizeof event)
         return GW_CORRUPT;

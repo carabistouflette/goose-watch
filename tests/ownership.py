@@ -27,3 +27,14 @@ for name, source in [
     result = subprocess.run([sys.argv[1], 'check', str(path)], capture_output=True, text=True, timeout=30)
     assert result.returncode != 0 and ('shrinks' if name == 'event-view' else 'root') in result.stderr, result.stderr
 print('six resource ownership rejections passed')
+
+# Repeat owner constraints for the additive set, including nested event views.
+for case in ('copy','assignment','array','embedded','by-value','event-view'):
+    old = ROOT / '.build' / f'reject-{case}.goose'
+    source = old.read_text().replace('watch::Watcher','watch::WatchSet')
+    if case == 'event-view':
+        source=source.replace('watch::Event','watch::SetEvent').replace('event.name','event.event.name')
+    path=ROOT / '.build' / f'reject-set-{case}.goose';path.write_text(source)
+    result=subprocess.run([sys.argv[1],'check',str(path)],capture_output=True,text=True,timeout=30)
+    assert result.returncode != 0 and ('shrinks' if case == 'event-view' else 'root') in result.stderr,result.stderr
+print('six WatchSet ownership/lifetime rejections passed')

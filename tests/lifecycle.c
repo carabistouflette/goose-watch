@@ -1,4 +1,5 @@
 /* SPDX-License-Identifier: Apache-2.0 */
+#include "../native/set.c"
 #include "../native/watch.c"
 #include <assert.h>
 #include <dirent.h>
@@ -6,6 +7,7 @@
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/stat.h>
 #include <sys/time.h>
 #include <sys/wait.h>
 static int descriptors(void) {
@@ -77,6 +79,44 @@ int main(int argc, char **argv) {
     assert(setitimer(ITIMER_REAL, &stopped, NULL) == 0);
     assert(meta[0] == EINTR && !meta[2]);
     assert(gw_close(owner, info) == GW_OK && descriptors() == before);
+    char first[4096], second_path[4096], packed_paths[8192];
+    snprintf(first, sizeof first, "%s/a", path);
+    snprintf(second_path, sizeof second_path, "%s/b", path);
+    assert(mkdir(first, 0700) == 0 && mkdir(second_path, 0700) == 0);
+    size_t first_len = strlen(first), second_len = strlen(second_path);
+    memcpy(packed_paths, first, first_len + 1);
+    memcpy(packed_paths + first_len + 1, second_path, second_len + 1);
+    int64_t set_map[512] = {0}, set_meta[8] = {0};
+    int64_t offsets[4] = {0, (int64_t)first_len, (int64_t)first_len + 1, (int64_t)second_len};
+    gw_ints map_view = {set_map, 512}, set_info = {set_meta, 8};
+    gw_const_bytes packed_view = {(const uint8_t *)packed_paths,
+                                  (int64_t)(first_len + second_len + 2)};
+    for (int i = 0; i < 64; ++i) {
+        assert(gw_set_open(owner, map_view, packed_view, (gw_ints){offsets, 4}, set_info) == GW_OK);
+        assert(gw_set_close(owner, map_view, set_info) == GW_OK);
+    }
+    assert(descriptors() == before);
+    assert(gw_set_open(owner, map_view, packed_view, (gw_ints){offsets, 4}, set_info) == GW_OK);
+    int set_fd = (int)(state[0] - 1);
+    assert(fcntl(set_fd, F_GETFL) & O_NONBLOCK);
+    assert(fcntl(set_fd, F_GETFD) & FD_CLOEXEC);
+    child = fork();
+    assert(child >= 0);
+    if (!child) {
+        char value[32];
+        snprintf(value, sizeof value, "%d", set_fd);
+        execl(argv[0], argv[0], "exec", value, (char *)NULL);
+        _exit(127);
+    }
+    assert(waitpid(child, &status, 0) == child && WIFEXITED(status) && WEXITSTATUS(status) == 0);
+    assert(gw_set_close(owner, map_view, set_info) == GW_OK);
+    assert(rmdir(second_path) == 0);
+    for (int i = 0; i < 64; ++i) {
+        assert(gw_set_open(owner, map_view, packed_view, (gw_ints){offsets, 4}, set_info) ==
+               GW_SYSTEM);
+        assert(set_meta[7] == 1 && !state[0]);
+    }
+    assert(descriptors() == before && rmdir(first) == 0);
     assert(rmdir(path) == 0);
     puts("real fd leak, close-on-exec and signal interruption tests passed");
 }

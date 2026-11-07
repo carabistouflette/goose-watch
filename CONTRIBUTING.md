@@ -10,7 +10,9 @@ native changes. Add positive, malformed, boundary and ownership regressions.
 Independent review is required for behavioral changes; fix actionable findings
 and keep exact-source CI passing. Compiler updates need independent review.
 
-Keep the core limited to watching one directory. No hidden I/O, threads,
+Keep single Watcher behavior compatible. WatchSet adds at most 256 explicit
+directories under one owner; preserve all-or-inactive open and whole-set loss
+semantics. No hidden I/O, threads,
 recursion, retries or process management. Preserve explicit cleanup and loss
 semantics. Profile before optimizing; retain raw samples and slower results,
 source/compiler/platform provenance and comparison limitations. CI verifies

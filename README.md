@@ -15,7 +15,7 @@ Python 3.11+, Linux headers and glibc:
 ```sh
 git clone https://github.com/carabistouflette/goose-watch.git
 cd goose-watch
-git checkout v0.1.0-alpha.1
+git checkout v0.1.0-alpha.2
 make setup
 .toolchain/goose/build/goose run examples/events.goose -- /absolute/directory
 make check test test-debug
@@ -28,7 +28,7 @@ uses GCC, Clang and sanitizers; see [validation](docs/VALIDATION.md).
 For an application, declare the pinned package in its root source file:
 
 ```goose
-import watch from "carabistouflette/goose-watch@v0.1.0-alpha.1";
+import watch from "carabistouflette/goose-watch@v0.1.0-alpha.2";
 import std;
 fn main() {
     var owner = watch::Watcher { .. };
@@ -54,6 +54,17 @@ For a neighboring local checkout use `import watch from "./goose-watch";` instea
 idle/timeout has `ready = false`; output is cleared on idle/error. `has` tests
 whether any supplied mask bit is set. Rename halves have separate events and
 an unsigned cookie, not a guaranteed pair. See the [complete API](docs/API.md).
+
+## Several explicit directories
+
+`WatchSet` adds one owner for up to 256 nonrecursive directories, stable caller
+indices, transactional setup and whole-set loss handling. See [set usage and
+limits](docs/SETS.md). Existing single-Watcher behavior stays unchanged. Sets need
+Linux 4.19+ with IN_MASK_CREATE headers; they do not discover nested directories.
+
+```sh
+.toolchain/goose/build/goose run examples/sets.goose -- /absolute/src /absolute/tests
+```
 
 ## Command rerun example
 
