@@ -33,9 +33,10 @@ Goose consumers run under ASan/UBSan. Six compilation failures enforce resource
 ownership. Fuzzing targets the decoder and path validator with bounded input
 size and fixed seed; it is finite, not proof of absence of defects.
 
-CI is configured for Linux GCC/Clang and full-commit pinned actions. Hosted CI
-has not run for this unpublished checkout. Local evidence is not hosted release
-acceptance. macOS, Windows, ARM64 and alternate libc are unqualified.
+CI runs Linux GCC/Clang with full-commit pinned actions. Release acceptance
+requires successful [hosted CI](https://github.com/carabistouflette/goose-watch/actions/workflows/ci.yml)
+for the exact candidate commit (or an explicitly verified identical merge tree).
+Local evidence alone does not establish hosted release acceptance. macOS, Windows, ARM64 and alternate libc are unqualified.
 
 ## Local qualification receipt
 

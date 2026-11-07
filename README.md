@@ -1,7 +1,7 @@
 # goose-watch
 
 Bounded Linux directory notifications for the [Goose language](https://github.com/aardappel/goose).
-Experimental, Apache-2.0; locally qualified on Linux x86-64/glibc. No tagged release.
+Experimental alpha API, Apache-2.0; qualified on Linux x86-64/glibc only.
 
 Watch one directory with a compiler-enforced noncopyable owner. `next` returns
 one event, retaining the rest of each 64 KiB kernel read. Buffered events need
@@ -9,10 +9,13 @@ no syscall. Names are owned bytes, waits are bounded, and event loss is explicit
 
 ## Try it
 
-From a standalone checkout, with Git, Make, CMake 3.27+, C/C++20 compilers,
-Python 3.11+, Linux headers and glibc installed:
+Requires Git, Make, CMake 3.27+, C/C++20 compilers,
+Python 3.11+, Linux headers and glibc:
 
 ```sh
+git clone https://github.com/carabistouflette/goose-watch.git
+cd goose-watch
+git checkout v0.1.0-alpha.1
 make setup
 .toolchain/goose/build/goose run examples/events.goose -- /absolute/directory
 make check test test-debug
@@ -22,10 +25,10 @@ Setup builds the full compiler commit in `GOOSE_REVISION`. With a compatible
 existing compiler, pass `GOOSE=/absolute/path/to/goose` to Make. Validation also
 uses GCC, Clang and sanitizers; see [validation](docs/VALIDATION.md).
 
-For an application beside this checkout:
+For an application, declare the pinned package in its root source file:
 
 ```goose
-import watch from "./goose-watch";
+import watch from "carabistouflette/goose-watch@v0.1.0-alpha.1";
 import std;
 fn main() {
     var owner = watch::Watcher { .. };
@@ -44,6 +47,8 @@ fn main() {
     if closed.error != watch::Error.None { print("close error: ", closed.os_error); }
 }
 ```
+
+For a neighboring local checkout use `import watch from "./goose-watch";` instead.
 
 `Status` separates `error`, `os_error`, `cleanup_error` and `ready`. A successful
 idle/timeout has `ready = false`; output is cleared on idle/error. `has` tests
