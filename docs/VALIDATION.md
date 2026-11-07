@@ -29,8 +29,8 @@ close-EINTR. No test changes the host's sysctls. Overflow delivery is synthetic;
 a real kernel-overflow stress campaign is not claimed. Real-native tests check
 repeat success/failure fd counts, independent owners, nonblocking/CLOEXEC flags,
 exec inheritance and a delivered interrupt signal. Native GCC/Clang and complete
-Goose consumers run under ASan/UBSan. Six compilation failures enforce resource
-ownership. Fuzzing targets the decoder and path validator with bounded input
+Goose consumers run under ASan/UBSan. Twelve compilation failures enforce resource ownership and event-name lifetimes
+for both owner types. Fuzzing targets the decoder and path validator with bounded input
 size and fixed seed; it is finite, not proof of absence of defects.
 
 CI runs Linux GCC/Clang with full-commit pinned actions. Release acceptance
@@ -38,7 +38,31 @@ requires successful [hosted CI](https://github.com/carabistouflette/goose-watch/
 for the exact candidate commit (or an explicitly verified identical merge tree).
 Local evidence alone does not establish hosted release acceptance. macOS, Windows, ARM64 and alternate libc are unqualified.
 
-## Local qualification receipt
+## WatchSet qualification
+
+Set tests cover 1–256 explicit directories, input-order indices, cross-directory
+rename cookies, non-UTF-8 and 255-byte names, rejected live reopen, reverse-order
+reopen, terminal ignored/overflow fencing, and output clearing. Native fixtures
+cover malformed packed offsets and terminators, alias/duplicate rejection,
+rollback at all 256 positions, unsorted descriptor IDs, unknown origins,
+legacy terminal compatibility and unsupported headers without acquiring an fd.
+Real lifecycle tests check successful and failed set opens for leaks, descriptor
+flags and exec inheritance. The mixed decoder/path/set fuzz campaign is finite.
+
+`make bench-set` measures open, 1,000 idle calls and draining 16 generated files
+per directory at counts 1, 16, 64 and 256. Generation is outside the drain timer.
+Measurements require a queue limit of at least 16,384; shared-host samples do not
+establish comparative performance. Source, compiler and binary hashes are
+checked before and after measurement.
+
+The local Set qualification at `3a6cee3` passed GCC/Clang builds, the native
+and complete Goose sanitizer suites, 50,000 mixed fuzz inputs, independent source
+and test reviews, and a fresh standalone clone check. Exact scope and limits are
+recorded in [the receipt](watch-set-validation.json). Clean five-round records
+for both C compilers are under [bench/results/watch-set](../bench/results/watch-set/).
+Hosted CI remains a release gate.
+
+## Alpha.1 local qualification receipt
 
 Runtime implementation was independently reviewed at `e6272a7`; final test and
 benchmark-tool fixes are in `8d3cda6`. The runtime sources are unchanged between
